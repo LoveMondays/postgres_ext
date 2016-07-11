@@ -103,9 +103,15 @@ module ActiveRecord
       end
 
       def build_where_chain(opts, rest, &block)
-        where_value = @scope.send(:build_where, opts, rest).map(&block)
-        @scope.references!(PredicateBuilder.references(opts)) if Hash === opts
-        @scope.where_values += where_value
+        if @scope.respond_to?(:where_clause_factory) # Rails 5
+          where_clause = @scope.send(:where_clause_factory).build(opts, rest).map(&block)
+          @scope.references!(PredicateBuilder.references(opts)) if Hash === opts
+          @scope.where_clause += where_clause
+        else # Rails 4
+          where_value = @scope.send(:build_where, opts, rest).map(&block)
+          @scope.references!(PredicateBuilder.references(opts)) if Hash === opts
+          @scope.where_values += where_value
+        end
         @scope
       end
 
